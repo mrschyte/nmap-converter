@@ -12,8 +12,7 @@ def main(report, workbook):
     results = workbook.add_worksheet("Results")
 
     bold = workbook.add_format({"bold": True})
-    flag = workbook.add_format({"bg_color":   "#FFC7CE",
-                                "font_color": "#9C0006"})
+
     results.autofilter("A1:L1")
     results.freeze_panes(1, 0)
 
