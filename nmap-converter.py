@@ -1,3 +1,5 @@
+#!env python
+
 from libnmap.parser import NmapParser
 from xlsxwriter import Workbook
 from datetime import datetime
