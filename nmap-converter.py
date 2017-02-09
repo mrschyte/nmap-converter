@@ -38,13 +38,14 @@ def main(reports, workbook):
                         "Hosts Up": lambda report: report.hosts_up,
                         "Hosts Down": lambda report: report.hosts_down}
 
-        results_header = ["Host", "IP", "Port", "Protocol", "Status", "Service", "Method", "Confidence", "Reason", "Product", "Version", "Extra", "Flagged", "Notes"]
+        results_header = ["Host", "IP", "Port", "Protocol", "Status", "Service", "Tunnel", "Method", "Confidence", "Reason", "Product", "Version", "Extra", "Flagged", "Notes"]
         results_body = {"Host": lambda host, service: head(host.hostnames),
                         "IP": lambda host, service: host.address,
                         "Port": lambda host, service: service.port,
                         "Protocol": lambda host, service: service.protocol,
                         "Status": lambda host, service: service.state,
                         "Service": lambda host, service: service.service,
+                        "Tunnel": lambda host, service: service.tunnel,
                         "Method": lambda host, service: service.service_dict.get("method", ""),
                         "Confidence": lambda host, service: float(service.service_dict.get("conf", "0")) / 10,
                         "Reason": lambda host, service: service.reason,
