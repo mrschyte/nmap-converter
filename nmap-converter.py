@@ -27,8 +27,8 @@ def main(reports, workbook):
         results.data_validation("M2:M$1048576", {"validate": "list",
                                                 "source": ["Y", "N", "N/A"]})
 
-        summary_header = ["Input Name", "Command", "Version", "Scan Type", "Started", "Completed", "Hosts Total", "Hosts Up", "Hosts Down"]
-        summary_body = {"Input Name": lambda report: report.basename,
+        summary_header = ["Scan", "Command", "Version", "Scan Type", "Started", "Completed", "Hosts Total", "Hosts Up", "Hosts Down"]
+        summary_body = {"Scan": lambda report: report.basename,
                         "Command": lambda report: report.commandline,
                         "Version": lambda report: report.version,
                         "Scan Type": lambda report: report.scan_type,
