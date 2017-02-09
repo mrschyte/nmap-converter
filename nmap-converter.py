@@ -84,6 +84,9 @@ if __name__ == "__main__":
     parser.add_argument("reports", metavar="XML", nargs="+", help="path to nmap xml report")
     args = parser.parse_args()
 
+    if args.output == None:
+        parser.error("Output must be specified")
+
     reports = []
     for report in args.reports:
         try:
