@@ -1,4 +1,4 @@
-#!env python
+#!/usr/bin/env python
 
 from libnmap.parser import NmapParser, NmapParserException
 from xlsxwriter import Workbook
