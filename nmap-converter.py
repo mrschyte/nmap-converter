@@ -24,7 +24,7 @@ def main(reports, workbook):
         results.autofilter("A1:N1")
         results.freeze_panes(1, 0)
 
-        results.data_validation("M2:M$1048576", {"validate": "list",
+        results.data_validation("N2:M$1048576", {"validate": "list",
                                                 "source": ["Y", "N", "N/A"]})
 
         summary_header = ["Scan", "Command", "Version", "Scan Type", "Started", "Completed", "Hosts Total", "Hosts Up", "Hosts Down"]
