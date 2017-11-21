@@ -68,7 +68,7 @@ def main(reports, workbook):
         results_format = {"Confidence": fmt_conf}
 
         comments = {"Service": lambda host, service: format_scripts_output(service.scripts_results)}
-        comments_format = {"Service": {"width": 500}}
+        comments_format = {"Service": {"width": 500, "height": 300}}
 
         print("[+] Processing {}".format(report.summary))
         for idx, item in enumerate(summary_header):
