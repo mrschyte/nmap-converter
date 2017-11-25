@@ -5,20 +5,6 @@ from xlsxwriter import Workbook
 from datetime import datetime
 
 import os.path
-import pprint
-
-def head(xs, default=""):
-    if len(xs) > 0:
-        return xs[0]
-    return default
-
-def format_scripts_output(results):
-    output = {}
-    for result in results:
-        output[result['id']] = (result['output'], result['elements'])
-    if len(output.keys()) > 0:
-        return pprint.pformat(output)
-    return None
 
 def main(reports, workbook):
     summary = workbook.add_worksheet("Summary")
@@ -33,8 +19,8 @@ def main(reports, workbook):
         results.autofilter("A1:N1")
         results.freeze_panes(1, 0)
 
-        results.data_validation("N2:M$1048576", {"validate": "list",
-                                                "source": ["Y", "N", "N/A"]})
+        results.data_validation("N2:N$1048576", {"validate": "list",
+                                                 "source": ["Y", "N", "N/A"]})
 
         summary_header = ["Scan", "Command", "Version", "Scan Type", "Started", "Completed", "Hosts Total", "Hosts Up", "Hosts Down"]
         summary_body = {"Scan": lambda report: report.basename,
@@ -48,7 +34,7 @@ def main(reports, workbook):
                         "Hosts Down": lambda report: report.hosts_down}
 
         results_header = ["Host", "IP", "Port", "Protocol", "Status", "Service", "Tunnel", "Method", "Confidence", "Reason", "Product", "Version", "Extra", "Flagged", "Notes"]
-        results_body = {"Host": lambda host, service: head(host.hostnames),
+        results_body = {"Host": lambda host, service: next(iter(host.hostnames), ""),
                         "IP": lambda host, service: host.address,
                         "Port": lambda host, service: service.port,
                         "Protocol": lambda host, service: service.protocol,
@@ -58,7 +44,7 @@ def main(reports, workbook):
                         "Method": lambda host, service: service.service_dict.get("method", ""),
                         "Confidence": lambda host, service: float(service.service_dict.get("conf", "0")) / 10,
                         "Reason": lambda host, service: service.reason,
-                        "Host": lambda host, service: head(host.hostnames),
+                        "Host": lambda host, service: next(iter(host.hostnames), ""),
                         "Product": lambda host, service: service.service_dict.get("product", ""),
                         "Version": lambda host, service: service.service_dict.get("version", ""),
                         "Extra": lambda host, service: service.service_dict.get("extrainfo", ""),
@@ -66,9 +52,6 @@ def main(reports, workbook):
                         "Notes": lambda host, service: ""}
 
         results_format = {"Confidence": fmt_conf}
-
-        comments = {"Service": lambda host, service: format_scripts_output(service.scripts_results)}
-        comments_format = {"Service": {"width": 500, "height": 300}}
 
         print("[+] Processing {}".format(report.summary))
         for idx, item in enumerate(summary_header):
@@ -84,10 +67,6 @@ def main(reports, workbook):
             for service in host.services:
                 for idx, item in enumerate(results_header):
                     results.write(row, idx, results_body[item](host, service), results_format.get(item, None))
-                    if item in comments:
-                        comment = comments[item](host, service)
-                        if comment != None:
-                            results.write_comment(row, idx, comment, comments_format.get(item, None))
                 row += 1
 
     workbook.close()
