@@ -8,8 +8,10 @@ import os.path
 
 def main(reports, workbook):
     summary = workbook.add_worksheet("Summary")
+    hosts = workbook.add_worksheet("Hosts")
     results = workbook.add_worksheet("Results")
     row = 1
+    row_hosts = 1
 
     for reportid, report in enumerate(reports):
         fmt_bold = workbook.add_format({"bold": True})
@@ -18,6 +20,9 @@ def main(reports, workbook):
 
         results.autofilter("A1:N1")
         results.freeze_panes(1, 0)
+
+        hosts.autofilter("A1:E1")
+        hosts.freeze_panes(1, 0)
 
         results.data_validation("N2:N$1048576", {"validate": "list",
                                                  "source": ["Y", "N", "N/A"]})
@@ -51,6 +56,14 @@ def main(reports, workbook):
                         "Flagged": lambda host, service: "N/A",
                         "Notes": lambda host, service: ""}
 
+        hosts_header = ["Host", "IP", "Status", "Services", "OS"]
+        hosts_body = {"Host": lambda host: next(iter(host.hostnames), ""),
+                      "IP": lambda host: host.address,
+                      "Status": lambda host: host.status,
+                      "Services": lambda host: len(host.services),
+                      "OS": lambda host: os_class_string(host.os_class_probabilities())
+                      }
+
         results_format = {"Confidence": fmt_conf}
 
         print("[+] Processing {}".format(report.summary))
@@ -62,6 +75,9 @@ def main(reports, workbook):
         for idx, item in enumerate(results_header):
             results.write(0, idx, item, fmt_bold)
 
+        for idx, item in enumerate(hosts_header):
+            hosts.write(0, idx, item, fmt_bold)
+
         for host in report.hosts:
             print("[+] Processing {}".format(host))
             for service in host.services:
@@ -69,8 +85,22 @@ def main(reports, workbook):
                     results.write(row, idx, results_body[item](host, service), results_format.get(item, None))
                 row += 1
 
+            for idx, item in enumerate(hosts_header):
+                hosts.write(row_hosts, idx, hosts_body[item](host))
+            row_hosts += 1
+
     workbook.close()
-    
+
+
+def os_class_string(os_class_array):
+    return ' | '.join(['{0} ({1}%)'.format(os_string(osc), osc.accuracy) for osc in os_class_array])
+
+
+def os_string(os_class):
+    rval = "{0}, {1}".format(os_class.vendor, os_class.osfamily)
+    if len(os_class.osgen):
+        rval += "({0})".format(os_class.osgen)
+    return rval
 
 if __name__ == "__main__":
     import argparse
