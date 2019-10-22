@@ -66,7 +66,6 @@ def generate_results(workbook, sheet, report):
                     "Method": lambda host, service: service.service_dict.get("method", ""),
                     "Confidence": lambda host, service: float(service.service_dict.get("conf", "0")) / 10,
                     "Reason": lambda host, service: service.reason,
-                    "Host": lambda host, service: next(iter(host.hostnames), ""),
                     "Product": lambda host, service: service.service_dict.get("product", ""),
                     "Version": lambda host, service: service.service_dict.get("version", ""),
                     "Extra": lambda host, service: service.service_dict.get("extrainfo", ""),
