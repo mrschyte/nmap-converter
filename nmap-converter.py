@@ -6,6 +6,37 @@ from datetime import datetime
 
 import os.path
 
+
+class ServiceModule():
+    def __init__(self, host, service):
+        self.host = next(iter(host.hostnames), "")
+        self.ip = host.address
+        self.port = service.port
+        self.protocol = service.protocol
+        self.status = service.state
+        self.service = service.service
+        self.tunnel = service.tunnel
+        self.method = service.service_dict.get("method", "")
+        self.source = "scanner"
+        self.confidence = float(service.service_dict.get("conf", "0")) / 10
+        self.reason = service.reason
+        self.product = service.service_dict.get("product", "")
+        self.version = service.service_dict.get("version", "")
+        self.extra = service.service_dict.get("extrainfo", "")
+        self.flagged = "N/A"
+        self.notes = ""
+
+
+class ScriptModule(ServiceModule):
+    def __init__(self, host, service, script):
+        super(ScriptModule, self).__init__(host, service)
+        self.source = "script"
+        self.method = script["id"]
+        self.confidence = ""
+        self.reason = ""
+        self.extra = script["output"].strip()
+
+
 def generate_summary(workbook, sheet, report):
     summary_header = ["Scan", "Command", "Version", "Scan Type", "Started", "Completed", "Hosts Total", "Hosts Up", "Hosts Down"]
     summary_body = {"Scan": lambda report: report.basename,
@@ -52,25 +83,26 @@ def generate_results(workbook, sheet, report):
     sheet.autofilter("A1:N1")
     sheet.freeze_panes(1, 0)
 
-    sheet.data_validation("N2:N$1048576", {"validate": "list",
+    sheet.data_validation("O2:O$1048576", {"validate": "list",
                                            "source": ["Y", "N", "N/A"]})
 
-    results_header = ["Host", "IP", "Port", "Protocol", "Status", "Service", "Tunnel", "Method", "Confidence", "Reason", "Product", "Version", "Extra", "Flagged", "Notes"]
-    results_body = {"Host": lambda host, service: next(iter(host.hostnames), ""),
-                    "IP": lambda host, service: host.address,
-                    "Port": lambda host, service: service.port,
-                    "Protocol": lambda host, service: service.protocol,
-                    "Status": lambda host, service: service.state,
-                    "Service": lambda host, service: service.service,
-                    "Tunnel": lambda host, service: service.tunnel,
-                    "Method": lambda host, service: service.service_dict.get("method", ""),
-                    "Confidence": lambda host, service: float(service.service_dict.get("conf", "0")) / 10,
-                    "Reason": lambda host, service: service.reason,
-                    "Product": lambda host, service: service.service_dict.get("product", ""),
-                    "Version": lambda host, service: service.service_dict.get("version", ""),
-                    "Extra": lambda host, service: service.service_dict.get("extrainfo", ""),
-                    "Flagged": lambda host, service: "N/A",
-                    "Notes": lambda host, service: ""}
+    results_header = ["Host", "IP", "Port", "Protocol", "Status", "Service", "Tunnel", "Source", "Method", "Confidence", "Reason", "Product", "Version", "Extra", "Flagged", "Notes"]
+    results_body = {"Host": lambda module: module.host,
+                    "IP": lambda module: module.ip,
+                    "Port": lambda module: module.port,
+                    "Protocol": lambda module: module.protocol,
+                    "Status": lambda module: module.status,
+                    "Service": lambda module: module.service,
+                    "Tunnel": lambda module: module.tunnel,
+                    "Source": lambda module: module.source,
+                    "Method": lambda module: module.method,
+                    "Confidence": lambda module: module.confidence,
+                    "Reason": lambda module: module.reason,
+                    "Product": lambda module: module.product,
+                    "Version": lambda module: module.version,
+                    "Extra": lambda module: module.extra,
+                    "Flagged": lambda module: module.flagged,
+                    "Notes": lambda module: module.notes}
 
     results_format = {"Confidence": workbook.myformats["fmt_conf"]}
 
@@ -82,9 +114,16 @@ def generate_results(workbook, sheet, report):
     for host in report.hosts:
         print("[+] Processing {}".format(host))
         for service in host.services:
+            module = ServiceModule(host, service)
             for idx, item in enumerate(results_header):
-                sheet.write(row + 1, idx, results_body[item](host, service), results_format.get(item, None))
+                sheet.write(row + 1, idx, results_body[item](module), results_format.get(item, None))
             row += 1
+
+            for script in service.scripts_results:
+                module = ScriptModule(host, service, script)
+                for idx, item in enumerate(results_header):
+                    sheet.write(row + 1, idx, results_body[item](module), results_format.get(item, None))
+                row += 1
 
     sheet.lastrow = row
 
