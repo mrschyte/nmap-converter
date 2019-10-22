@@ -79,12 +79,10 @@ def generate_hosts(workbook, sheet, report):
 
     sheet.lastrow = row
 
+
 def generate_results(workbook, sheet, report):
     sheet.autofilter("A1:N1")
     sheet.freeze_panes(1, 0)
-
-    sheet.data_validation("O2:O$1048576", {"validate": "list",
-                                           "source": ["Y", "N", "N/A"]})
 
     results_header = ["Host", "IP", "Port", "Protocol", "Status", "Service", "Tunnel", "Source", "Method", "Confidence", "Reason", "Product", "Version", "Extra", "Flagged", "Notes"]
     results_body = {"Host": lambda module: module.host,
@@ -125,7 +123,10 @@ def generate_results(workbook, sheet, report):
                     sheet.write(row + 1, idx, results_body[item](module), results_format.get(item, None))
                 row += 1
 
+    sheet.data_validation("O2:O${}".format(row + 1), {"validate": "list",
+                                           "source": ["Y", "N", "N/A"]})
     sheet.lastrow = row
+
 
 def setup_workbook_formats(workbook):
     formats = {"fmt_bold": workbook.add_format({"bold": True}),
@@ -134,14 +135,17 @@ def setup_workbook_formats(workbook):
     formats["fmt_conf"].set_num_format("0%")
     return formats
 
+
 def os_class_string(os_class_array):
     return " | ".join(["{0} ({1}%)".format(os_string(osc), osc.accuracy) for osc in os_class_array])
+
 
 def os_string(os_class):
     rval = "{0}, {1}".format(os_class.vendor, os_class.osfamily)
     if len(os_class.osgen):
         rval += "({0})".format(os_class.osgen)
     return rval
+
 
 def main(reports, workbook):
     sheets = {"Summary": generate_summary,
@@ -156,6 +160,7 @@ def main(reports, workbook):
         for report in reports:
             sheet_func(workbook, sheet, report)
     workbook.close()
+
 
 if __name__ == "__main__":
     import argparse
