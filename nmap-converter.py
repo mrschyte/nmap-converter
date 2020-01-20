@@ -7,8 +7,30 @@ from datetime import datetime
 import os.path
 
 
-class ServiceModule():
+class HostModule():
+    def __init__(self, host):
+        self.host = next(iter(host.hostnames), "")
+        self.ip = host.address
+        self.port = ""
+        self.protocol = ""
+        self.status = ""
+        self.service = ""
+        self.tunnel = ""
+        self.method = ""
+        self.source = ""
+        self.confidence = ""
+        self.reason = ""
+        self.reason = ""
+        self.product = ""
+        self.version = ""
+        self.extra = ""
+        self.flagged = "N/A"
+        self.notes = ""
+
+
+class ServiceModule(HostModule):
     def __init__(self, host, service):
+        super(ServiceModule, self).__init__(host)
         self.host = next(iter(host.hostnames), "")
         self.ip = host.address
         self.port = service.port
@@ -27,27 +49,40 @@ class ServiceModule():
         self.notes = ""
 
 
-class ScriptModule(ServiceModule):
+class HostScriptModule(HostModule):
+    def __init__(self, host, script):
+        super(HostScriptModule, self).__init__(host)
+        self.method = script["id"]
+        self.source = "script"
+        self.extra = script["output"].strip()
+
+
+class ServiceScriptModule(ServiceModule):
     def __init__(self, host, service, script):
-        super(ScriptModule, self).__init__(host, service)
+        super(ServiceScriptModule, self).__init__(host, service)
         self.source = "script"
         self.method = script["id"]
-        self.confidence = ""
-        self.reason = ""
         self.extra = script["output"].strip()
+
+
+def _tgetattr(object, name, default=None):
+    try:
+        return getattr(object, name, default)
+    except Exception:
+        return default
 
 
 def generate_summary(workbook, sheet, report):
     summary_header = ["Scan", "Command", "Version", "Scan Type", "Started", "Completed", "Hosts Total", "Hosts Up", "Hosts Down"]
-    summary_body = {"Scan": lambda report: report.basename,
-                    "Command": lambda report: report.commandline,
-                    "Version": lambda report: report.version,
-                    "Scan Type": lambda report: report.scan_type,
-                    "Started": lambda report: datetime.utcfromtimestamp(report.started).strftime("%Y-%m-%d %H:%M:%S (UTC)"),
-                    "Completed": lambda report: datetime.utcfromtimestamp(report.endtime).strftime("%Y-%m-%d %H:%M:%S (UTC)"),
-                    "Hosts Total": lambda report: report.hosts_total,
-                    "Hosts Up": lambda report: report.hosts_up,
-                    "Hosts Down": lambda report: report.hosts_down}
+    summary_body = {"Scan": lambda report: _tgetattr(report, 'basename', 'N/A'),
+                    "Command": lambda report: _tgetattr(report, 'commandline', 'N/A'),
+                    "Version": lambda report: _tgetattr(report, 'version', 'N/A'),
+                    "Scan Type": lambda report: _tgetattr(report, 'scan_type', 'N/A'),
+                    "Started": lambda report: datetime.utcfromtimestamp(_tgetattr(report, 'started', 0)).strftime("%Y-%m-%d %H:%M:%S (UTC)"),
+                    "Completed": lambda report: datetime.utcfromtimestamp(_tgetattr(report, 'endtime', 0)).strftime("%Y-%m-%d %H:%M:%S (UTC)"),
+                    "Hosts Total": lambda report: _tgetattr(report, 'hosts_total', 'N/A'),
+                    "Hosts Up": lambda report: _tgetattr(report, 'hosts_up', 'N/A'),
+                    "Hosts Down": lambda report: _tgetattr(report, 'hosts_down', 'N/A')}
 
     for idx, item in enumerate(summary_header):
         sheet.write(0, idx, item, workbook.myformats["fmt_bold"])
@@ -111,6 +146,13 @@ def generate_results(workbook, sheet, report):
     row = sheet.lastrow
     for host in report.hosts:
         print("[+] Processing {}".format(host))
+
+        for script in host.scripts_results:
+            module = HostScriptModule(host, script)
+            for idx, item in enumerate(results_header):
+                sheet.write(row + 1, idx, results_body[item](module), results_format.get(item, None))
+            row += 1
+
         for service in host.services:
             module = ServiceModule(host, service)
             for idx, item in enumerate(results_header):
@@ -118,7 +160,7 @@ def generate_results(workbook, sheet, report):
             row += 1
 
             for script in service.scripts_results:
-                module = ScriptModule(host, service, script)
+                module = ServiceScriptModule(host, service, script)
                 for idx, item in enumerate(results_header):
                     sheet.write(row + 1, idx, results_body[item](module), results_format.get(item, None))
                 row += 1
