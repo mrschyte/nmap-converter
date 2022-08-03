@@ -54,7 +54,7 @@ class HostScriptModule(HostModule):
         super(HostScriptModule, self).__init__(host)
         self.method = script["id"]
         self.source = "script"
-        self.extra = script["output"].strip()
+        self.extra = script.get("output", "").strip()
 
 
 class ServiceScriptModule(ServiceModule):
